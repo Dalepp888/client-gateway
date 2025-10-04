@@ -1,7 +1,9 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { first, firstValueFrom } from 'rxjs';
+import { catchError, first, firstValueFrom, pipe } from 'rxjs';
+import { CreateProductDto } from 'src/products/dto/create-product.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { UpdateProductDto } from 'src/products/dto/update-product.dto';
 import { PRODUCT_SERVICE } from 'src/config/services';
 
 @Controller('products')
@@ -10,8 +12,8 @@ export class ProductsController {
   constructor(@Inject(PRODUCT_SERVICE) private readonly productClient: ClientProxy) { }
 
   @Post()
-  createProduct() {
-    return 'Product created';
+  createProduct(@Body() CreateProductDto: CreateProductDto) {
+    return this.productClient.send({ cmd: 'createProduct' }, CreateProductDto);
   }
 
   @Get()
@@ -33,12 +35,24 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  deleteProduct(@Param('id') id: string) {
-    return `Product with ID: ${id} deleted`;
+  deleteProduct(@Param() id: string) {
+    return this.productClient.send({ cmd: 'deleteProduct' }, id)
+    .pipe(
+      catchError(err => {
+        throw new RpcException(err.message);
+      })
+    );
   }
 
   @Patch(':id')
-  updateProduct(@Body() body: any, @Param('id') id: string) {
-    return `Product with ID: ${id} updated`;
+  updateProduct(@Body() updateProduct: UpdateProductDto, @Param('id', ParseIntPipe) id: string) {
+
+    return this.productClient.send({ cmd: 'updateProduct' }, {
+      id, ...updateProduct
+    }).pipe(
+      catchError(err => {
+        throw new RpcException(err.message);
+      })
+    );
   }
 }
