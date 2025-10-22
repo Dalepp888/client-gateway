@@ -1,16 +1,22 @@
-import { Type } from "class-transformer"
-import { IsNumber, IsPositive, IsString, Min } from "class-validator"
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsPositive } from "class-validator";
+import { OrdersStatus, OrdersStatusList } from "../enum/enum.order";
 
 export class CreateOrderDto {
 
-    @IsString()
-    public name: string
-
-    @IsNumber({
-        maxDecimalPlaces: 4
-    })
+    @IsNumber()
     @IsPositive()
-    @Min(0)
-    @Type(() => Number)
-    public price: number
+    totalAmount: number;
+
+    @IsNumber()
+    @IsPositive()
+    totalItems: number;
+
+    @IsEnum( OrdersStatusList, { message: `Invalid order status ${ OrdersStatusList }` } )
+    @IsOptional()
+    status: OrdersStatus = OrdersStatus.PENDING;
+
+    @IsOptional()
+    @IsBoolean()
+    paid: boolean = false;
+
 }
